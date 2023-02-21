@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\api\V1;
 
+use App\Filters\V1\InvoiceFilter;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
 use App\Http\Resources\V1\InvoiceCollection;
 use App\Http\Resources\V1\InvoiceResource;
+use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 
@@ -17,9 +19,17 @@ class InvoiceController extends Controller
      * Display a listing of the resource.
      * @return Response
      */
-    public function index()
+    public function index(HttpRequest $request)
     {
-        return new InvoiceCollection(Invoice::paginate());
+        $filter = new InvoiceFilter();
+        $queryItems = $filter->transform($request); //[['column', 'operator', 'value']]
+
+        if(count($queryItems) == 0) {
+            return new InvoiceCollection(Invoice::paginate());
+        } else {
+            $invoices = Invoice::where($queryItems)->paginate();
+            return new InvoiceCollection($invoices->appends($request->query()));
+        }
     }
 
     /**
